@@ -1,42 +1,44 @@
 const express = require('express');
-const fs = require('fs');
 const path = require('path');
-const ytdl = require('yt-dlp-exec'); // ✅ npm package
+const fs = require('fs');
+const ytdlp = require('yt-dlp-exec');
 
 const app = express();
 
+// Pasta temporária
 const TMP_DIR = path.join(__dirname, 'tmp');
 if (!fs.existsSync(TMP_DIR)) fs.mkdirSync(TMP_DIR);
 
+// Endpoint /ytaudio
 app.get('/ytaudio', async (req, res) => {
+  const url = req.query.url;
+  const key = req.query.key || null;
+
+  if (process.env.API_KEY && key !== process.env.API_KEY)
+    return res.status(403).send('Chave inválida');
+
+  if (!url) return res.status(400).send('Falta parâmetro url');
+
+  const outputPath = path.join(TMP_DIR, `audio_${Date.now()}.mp3`);
+
   try {
-    const url = req.query.url;
-    const key = req.query.key || null;
-
-    if (process.env.API_KEY && key !== process.env.API_KEY) {
-      return res.status(403).send('Chave de API inválida');
-    }
-
-    if (!url) return res.status(400).send('Falta parâmetro: url');
-
-    const outputPath = path.join(TMP_DIR, `audio_${Date.now()}.mp3`);
-
-    await ytdl(url, {
+    await ytdlp(url, {
       extractAudio: true,
       audioFormat: 'mp3',
       output: outputPath
     });
 
-    const stream = fs.createReadStream(outputPath);
     res.setHeader('Content-Type', 'audio/mpeg');
+    const stream = fs.createReadStream(outputPath);
     stream.pipe(res);
-    stream.on('end', () => fs.unlink(outputPath, () => {}));
 
-  } catch (error) {
-    console.error(error);
-    res.status(500).send('Erro interno da API');
+    stream.on('end', () => fs.unlink(outputPath, () => {}));
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Erro ao processar áudio');
   }
 });
 
+// Porta Render
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`API rodando na porta ${PORT}`));
