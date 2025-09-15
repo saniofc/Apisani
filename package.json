@@ -4,7 +4,6 @@
   "main": "API.js",
   "scripts": {
     "start": "node API.js",
-    "postinstall": "npm install -g yt-dlp"
   },
   "dependencies": {
     "express": "^4.18.2"
