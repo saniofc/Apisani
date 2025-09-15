@@ -1,9 +1,9 @@
 {
   "name": "api-bot",
   "version": "1.0.0",
-  "main": "API.js",
+  "main": "api.js",
   "scripts": {
-    "start": "node API.js",
+    "start": "node api.js"
   },
   "dependencies": {
     "express": "^4.18.2"
