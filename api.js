@@ -1,6 +1,7 @@
-// API.js - pronta para Render + Bot
+// API.js - pronta para Render + Bot sem npm yt-dlp
 const express = require('express');
 const { exec } = require('child_process');
+const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
@@ -9,6 +10,16 @@ const app = express();
 // Pasta temporária para armazenar mp3
 const TMP_DIR = path.join(__dirname, 'tmp');
 if (!fs.existsSync(TMP_DIR)) fs.mkdirSync(TMP_DIR);
+
+// Caminho do yt-dlp local
+const YTDLP_PATH = path.join(__dirname, 'yt-dlp');
+
+// Baixa yt-dlp se não existir
+if (!fs.existsSync(YTDLP_PATH)) {
+  console.log('Baixando yt-dlp...');
+  execSync(`curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o ${YTDLP_PATH}`);
+  execSync(`chmod +x ${YTDLP_PATH}`);
+}
 
 // Endpoint: /ytaudio?url=LINK&key=SUA_CHAVE
 app.get('/ytaudio', async (req, res) => {
@@ -25,8 +36,8 @@ app.get('/ytaudio', async (req, res) => {
 
     const outputPath = path.join(TMP_DIR, `audio_${Date.now()}.mp3`);
 
-    // Baixa áudio via yt-dlp
-    exec(`yt-dlp -x --audio-format mp3 -o "${outputPath}" "${url}"`, (err) => {
+    // Baixa áudio via yt-dlp local
+    exec(`${YTDLP_PATH} -x --audio-format mp3 -o "${outputPath}" "${url}"`, (err) => {
       if (err) {
         console.error(err);
         return res.status(500).send('Erro ao processar áudio');
