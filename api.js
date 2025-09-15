@@ -18,7 +18,8 @@ app.get('/ytaudio', async (req, res) => {
       extractAudio: true,
       audioFormat: 'mp3',
       output: outputPath,
-      format: 'bestaudio[filesize<50M]'
+      // Removido filesize e cookie
+      format: 'bestaudio'
     });
 
     res.setHeader('Content-Type', 'audio/mpeg');
@@ -29,9 +30,9 @@ app.get('/ytaudio', async (req, res) => {
       fs.unlink(outputPath, () => {});
     });
   } catch (err) {
-    console.error("Erro no yt-dlp:", err);
+    console.error("Erro no yt-dlp:", err.message || err);
     if (fs.existsSync(outputPath)) fs.unlink(outputPath, () => {});
-    res.status(500).send('❌ Erro ao processar áudio: ' + err.message);
+    res.status(500).send('❌ Erro ao processar áudio. Alguns vídeos exigem login ou restrição de idade.');
   }
 });
 
