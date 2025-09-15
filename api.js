@@ -14,31 +14,45 @@ app.get('/ytaudio', async (req, res) => {
   const url = req.query.url;
   const key = req.query.key || null;
 
-  if (process.env.API_KEY && key !== process.env.API_KEY)
-    return res.status(403).send('Chave inválida');
+  // Verificação de chave (se definida no Render)
+  if (process.env.API_KEY && key !== process.env.API_KEY) {
+    return res.status(403).send('❌ Chave inválida');
+  }
 
-  if (!url) return res.status(400).send('Falta parâmetro url');
+  if (!url) return res.status(400).send('❌ Falta parâmetro url');
 
   const outputPath = path.join(TMP_DIR, `audio_${Date.now()}.mp3`);
 
   try {
+    // Baixa o áudio com limite de tamanho
     await ytdlp(url, {
       extractAudio: true,
       audioFormat: 'mp3',
-      output: outputPath
+      output: outputPath,
+      format: 'bestaudio[filesize<50M]', // máximo 50 MB
+      maxFilesize: '50M'
     });
 
     res.setHeader('Content-Type', 'audio/mpeg');
     const stream = fs.createReadStream(outputPath);
     stream.pipe(res);
 
-    stream.on('end', () => fs.unlink(outputPath, () => {}));
+    // Limpa arquivo quando terminar
+    stream.on('close', () => {
+      fs.unlink(outputPath, (err) => {
+        if (err) console.error("Erro ao deletar arquivo tmp:", err);
+      });
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).send('Erro ao processar áudio');
+    console.error("Erro no yt-dlp:", err);
+    // Limpa se arquivo foi criado antes do erro
+    if (fs.existsSync(outputPath)) {
+      fs.unlink(outputPath, () => {});
+    }
+    res.status(500).send('❌ Erro ao processar áudio: ' + err.message);
   }
 });
 
 // Porta Render
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`API rodando na porta ${PORT}`));
+app.listen(PORT, () => console.log(`✅ API rodando na porta ${PORT}`));
